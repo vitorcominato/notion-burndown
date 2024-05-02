@@ -71,15 +71,15 @@ const createNewSprintSummary = async (
           },
         ],
       },
-      Sprint: {
+      Number: {
         number: sprint,
       },
-      Start: {
+      StartDate: {
         date: {
           start,
         },
       },
-      End: {
+      EndDate: {
         date: {
           start: end,
         },
@@ -92,6 +92,15 @@ const getLatestSprintSummary = async (
   sprintSummaryDb,
   { sprintProp }
 ) => {
+  console.log('AEEEEEEE: ', {
+    database_id: sprintSummaryDb,
+    sorts: [
+      {
+        property: sprintProp,
+        direction: "descending",
+      },
+    ],
+  })
   const response = await notion.databases.query({
     database_id: sprintSummaryDb,
     sorts: [
@@ -102,11 +111,12 @@ const getLatestSprintSummary = async (
     ],
   });
   const { properties } = response.results[0];
-  const { Sprint, Start, End } = properties;
+  const { Number: Sprint, StartDate: Start, EndDate: End, Dates } = properties;
+  console.log(Dates)
   return {
     sprint: Sprint.number,
-    start: moment(Start.date.start),
-    end: moment(End.date.start),
+    start: moment(Start?.date?.start),
+    end: moment(End?.date?.start),
   };
 };
 
@@ -116,6 +126,15 @@ const countPointsLeftInSprint = async (
   sprint,
   { sprintProp, estimateProp, statusExclude }
 ) => {
+  console.log('AAAAA: ',{
+    database_id: backlogDb,
+    filter: {
+      property: sprintProp,
+      select: {
+        equals: `Sprint ${sprint}`,
+      },
+    },
+  })
   const response = await notion.databases.query({
     database_id: backlogDb,
     filter: {
@@ -449,6 +468,7 @@ const run = async () => {
     notion.databases.sprintSummary,
     { sprintProp: notion.options.sprintProp }
   ));
+
   log.info(
     JSON.stringify({ message: "Found latest sprint", sprint, start, end })
   );
@@ -483,7 +503,11 @@ const run = async () => {
       return;
     }
   }
-
+  console.log('AOOOOO: ', {
+    sprintProp: notion.options.sprintProp,
+    estimateProp: notion.options.estimateProp,
+    statusExclude: notion.options.statusExclude,
+  })
   const pointsLeftInSprint = await countPointsLeftInSprint(
     notion.client,
     notion.databases.backlog,
